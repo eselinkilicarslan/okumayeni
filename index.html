@@ -5,223 +5,233 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sınıf Kitap Okuma Takip Sistemi</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; color: #333; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eef0f3; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h2 { color: #1a73e8; font-size: 22px; }
-        .card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: 600; margin-bottom: 6px; color: #495057; }
-        input, select, textarea, button { width: 100%; padding: 10px 14px; border-radius: 6px; border: 1px solid #ced4da; font-size: 15px; }
-        button { background-color: #1a73e8; color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #1557b0; }
-        .badge { background: #e8f0fe; color: #1a73e8; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 14px; }
-        .status-badge { padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; margin-bottom: 15px; display: inline-block; }
-        .online { background-color: #d4edda; color: #155724; }
+        :root {
+            --primary: #1a73e8;
+            --primary-hover: #1557b0;
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text: #202124;
+            --border: #dadce0;
+            --success: #34a853;
+            --success-bg: #e6f4ea;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         
-        .day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
-        .day-box { background: white; border: 2px solid #dee2e6; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; user-select: none; transition: 0.2s; }
-        .day-box.active { background-color: #e6f4ea; border-color: #34a853; color: #137333; font-weight: bold; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; }
+        .header h2 { font-size: 20px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .badge { background: #e8f0fe; color: var(--primary); padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 13px; }
+        
+        .card { background: #f8f9fa; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 6px; color: #3c4043; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+        
+        .btn { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; }
+        .btn:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: var(--success); }
+        .btn-success:hover { background-color: #2b8a43; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; font-size: 14px; }
-        th { background-color: #f1f3f4; color: #3c4043; }
+        /* Öğrenci Ekranı Stilleri */
+        .page-banner { background: #e8f0fe; border: 1px solid #aecbfa; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; }
+        .page-number { font-size: 28px; font-weight: bold; color: #d93025; margin-top: 5px; }
+        
+        .day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
+        .day-card { background: white; border: 2px solid var(--border); border-radius: 8px; padding: 12px 8px; text-align: center; cursor: pointer; user-select: none; transition: 0.2s; }
+        .day-card.active { background-color: var(--success-bg); border-color: var(--success); color: #137333; font-weight: bold; }
+        .day-card .status-icon { font-size: 18px; margin-top: 4px; }
+
+        /* Öğretmen Tablosu */
+        .table-responsive { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 13px; }
+        th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: center; }
+        th { background-color: #f1f3f4; color: #3c4043; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        
+        .lock-screen { text-align: center; padding: 30px 10px; }
+        .lock-screen input { max-width: 250px; margin: 10px auto; text-align: center; font-size: 18px; letter-spacing: 4px; }
     </style>
-
-    <!-- Firebase SDK Compat Mode -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
         <h2>📚 Okuma Takip Sistemi</h2>
-        <span id="roleBadge" class="badge">Öğrenci Modu</span>
+        <span id="roleBadge" class="badge">Yükleniyor...</span>
     </div>
 
-    <div id="statusBox" class="status-badge online">🌐 Canlı Bulut Bağlantısı Aktif</div>
-
-    <!-- ÖĞRENCİ EKRANI -->
-    <div id="studentView">
+    <!-- 1. ÖĞRENCİ ARAYÜZÜ (Varsayılan Link) -->
+    <div id="studentView" style="display: none;">
         <div class="card">
             <div class="form-group">
-                <label for="studentSelect">İsminizi Seçiniz:</label>
-                <select id="studentSelect" onchange="loadStudentProgress()">
-                    <option value="">-- Listeden Adınızı Seçin --</option>
+                <label for="studentSelect">Adınızı Seçiniz:</label>
+                <select id="studentSelect" onchange="onStudentSelect()">
+                    <option value="">-- Listeden İsminizi Seçin --</option>
                 </select>
             </div>
         </div>
 
-        <div id="studentDetail" style="display: none;">
-            <div class="card" style="text-align: center; background: #e8f0fe; border-color: #aecbfa;">
-                <h3 id="studentNameDisplay" style="color: #174ea6;">-</h3>
-                <p style="margin-top: 8px; font-size: 18px;">
-                    Bu Haftaki Okuma Göreviniz: <strong id="assignedPage" style="color: #d93025; font-size: 22px;">-</strong>. Sayfa
-                </p>
+        <div id="studentContent" style="display: none;">
+            <div class="page-banner">
+                <div style="font-size: 14px; color: #5f6368;">Bu Haftaki Okuma Göreviniz</div>
+                <div class="page-number" id="displayPageNo">Sayfa -</div>
             </div>
 
             <div class="card">
-                <label>7 Günlük Okuma Onayı (Okuduğunuz Günün Üzerine Tıklayın):</label>
-                <div class="day-grid" id="daysContainer"></div>
+                <label>7 Günlük Okuma Durumunuz (Okuduğunuz Günü İşaretleyin):</label>
+                <div class="day-grid" id="dayGrid"></div>
             </div>
         </div>
     </div>
 
-    <!-- ÖĞRETMEN EKRANI (?mod=ogretmen) -->
+    <!-- 2. ÖĞRETMEN ARAYÜZÜ (?mod=ogretmen Linki) -->
     <div id="teacherView" style="display: none;">
-        <div class="card">
-            <h3>⚙️ Sınıf ve Hafta Ayarları</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
-                <div class="form-group">
-                    <label>Aktif Hafta:</label>
-                    <input type="number" id="weekInput" value="1" min="1">
-                </div>
-                <div class="form-group">
-                    <label>Öğrenci Sayısı:</label>
-                    <input type="number" id="studentCountInput" value="0" readonly>
-                </div>
+        
+        <!-- Şifre Ekranı -->
+        <div id="teacherLock" class="card lock-screen">
+            <h3>🔒 Öğretmen Paneli Girişi</h3>
+            <p style="font-size: 13px; color: #5f6368; margin-top: 5px;">Devam etmek için öğretmen şifresini girin.</p>
+            <div class="form-group" style="margin-top: 15px;">
+                <input type="password" id="passInput" placeholder="Şifre (Varsayılan: 1234)">
             </div>
-            <div class="form-group">
-                <label>Öğrenci İsimleri (Her satıra 1 isim yazın):</label>
-                <textarea id="studentNamesInput" rows="6" placeholder="1. Öğrenci&#10;2. Öğrenci"></textarea>
-            </div>
-            <button onclick="saveClassSettings()">Listeyi ve Sınıfı Canlı Kaydet</button>
+            <button class="btn" onclick="checkPassword()" style="max-width: 250px; margin: 0 auto;">Giriş Yap</button>
         </div>
 
-        <div class="card">
-            <h3>📊 Canlı Sınıf Takip Tablosu</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Ad Soyad</th>
-                            <th>Sayfa</th>
-                            <th>Pzt</th><th>Sal</th><th>Çar</th><th>Per</th><th>Cum</th><th>Cmt</th><th>Paz</th>
-                        </tr>
-                    </thead>
-                    <tbody id="teacherTableBody">
-                        <tr><td colspan="10">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
+        <!-- Yönetim Paneli (Şifre Sonrası) -->
+        <div id="teacherPanel" style="display: none;">
+            <div class="card">
+                <h3 style="margin-bottom: 12px; font-size: 16px;">⚙️ Sınıf & Hafta Ayarları</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group">
+                        <label>Aktif Hafta:</label>
+                        <input type="number" id="weekInput" value="1" min="1" onchange="saveTeacherSettings()">
+                    </div>
+                    <div class="form-group">
+                        <label>Öğrenci Sayısı:</label>
+                        <input type="number" id="studentCountInput" value="0" readonly style="background: #e9ecef;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Öğrenci Listesi (Her satıra bir öğrenci ismi yazın):</label>
+                    <textarea id="studentListInput" rows="6" placeholder="Ahmet Yılmaz&#10;Ayşe Kaya&#10;Mehmet Demir"></textarea>
+                </div>
+                <button class="btn btn-success" onclick="saveTeacherSettings()">Sınıf Listesini ve Haftayı Kaydet</button>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-bottom: 10px; font-size: 16px;">📊 Sınıf Genel Okuma Tablosu</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Ad Soyad</th>
+                                <th>Sayfa</th>
+                                <th>Pzt</th><th>Sal</th><th>Çar</th><th>Per</th><th>Cum</th><th>Cmt</th><th>Paz</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacherTableBody">
+                            <tr><td colspan="10">Kayıtlı öğrenci bulunamadı.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// !!! BURAYA KENDİ FIREBASE BİLGİLERİNİZİ YAPIŞTIRIN !!!
-const firebaseConfig = {
-     apiKey: "AIzaSyC47wM4LiwlPeDzUbvh8MDQPOssYmOqfL8",
-  authDomain: "okuma-3fc6c.firebaseapp.com",
-  projectId: "okuma-3fc6c",
-  storageBucket: "okuma-3fc6c.firebasestorage.app",
-  messagingSenderId: "557512021017",
-  appId: "1:557512021017:web:5956700a9025d16bbe8688",
-  measurementId: "G-KDWNQJPX5X"
-};
+// --- UYGULAMA VERİ YAPISI ---
+const DEFAULT_PASSWORD = "1234";
 
-// Firebase Bağlantısını Başlat
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-let appData = {
+let store = {
     week: 1,
-    students: [],
-    progress: {}
+    students: ["Öğrenci 1", "Öğrenci 2", "Öğrenci 3"],
+    progress: {} // { studentIndex: [true, false, ...] }
 };
 
+// URL Parametresi Kontrolü
 const urlParams = new URLSearchParams(window.location.search);
 const isTeacherMode = urlParams.get('mod') === 'ogretmen';
 
+// Sayfa Yüklendiğinde
 window.onload = function() {
+    loadData();
+
     if (isTeacherMode) {
         document.getElementById('roleBadge').innerText = "Öğretmen Modu";
-        document.getElementById('studentView').style.display = "none";
         document.getElementById('teacherView').style.display = "block";
     } else {
         document.getElementById('roleBadge').innerText = "Öğrenci Ekranı";
         document.getElementById('studentView').style.display = "block";
-        document.getElementById('teacherView').style.display = "none";
+        initStudentView();
     }
-    
-    // Veritabanını Canlı Dinle
-    listenCloudData();
 };
 
-function listenCloudData() {
-    db.collection("okuma_takip").doc("sinif_verisi")
-        .onSnapshot((doc) => {
-            if (doc.exists) {
-                appData = doc.data();
-                if (!appData.progress) appData.progress = {};
-                
-                if (isTeacherMode) {
-                    updateTeacherUI();
-                } else {
-                    populateStudentSelect();
-                }
-            }
-        }, (error) => {
-            console.error("Firebase Bağlantı Hatası:", error);
-            document.getElementById('statusBox').className = "status-badge";
-            document.getElementById('statusBox').style.background = "#f8d7da";
-            document.getElementById('statusBox').style.color = "#721c24";
-            document.getElementById('statusBox').innerText = "⚠️ Veritabanı İzin Hatası! Kuralları (Rules) Kontrol Edin.";
-        });
+// --- ÖĞRETMEN PANELİ FONKSİYONLARI ---
+function checkPassword() {
+    const pass = document.getElementById('passInput').value;
+    if (pass === DEFAULT_PASSWORD) {
+        document.getElementById('teacherLock').style.display = "none";
+        document.getElementById('teacherPanel').style.display = "block";
+        initTeacherPanel();
+    } else {
+        alert("Hatalı şifre! (Varsayılan Şifre: 1234)");
+    }
 }
 
-function saveClassSettings() {
-    const rawNames = document.getElementById('studentNamesInput').value.trim();
-    const names = rawNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+function initTeacherPanel() {
+    document.getElementById('weekInput').value = store.week || 1;
+    document.getElementById('studentListInput').value = store.students ? store.students.join('\n') : '';
+    document.getElementById('studentCountInput').value = store.students ? store.students.length : 0;
+    renderTeacherTable();
+}
+
+function saveTeacherSettings() {
+    const rawNames = document.getElementById('studentListInput').value.trim();
+    const names = rawNames.split('\n').map(s => s.trim()).filter(s => s.length > 0);
     const week = parseInt(document.getElementById('weekInput').value) || 1;
 
     if (names.length === 0) {
-        alert("En az 1 öğrenci ismi girmelisiniz!");
+        alert("Lütfen en az bir öğrenci ismi giriniz.");
         return;
     }
 
-    appData.students = names;
-    appData.week = week;
-
-    db.collection("okuma_takip").doc("sinif_verisi").set(appData)
-        .then(() => alert("Sınıf listesi ve ayarlar canlı veritabanına kaydedildi!"))
-        .catch(err => alert("Kayıt hatası: " + err.message));
+    store.students = names;
+    store.week = week;
+    
+    saveData();
+    document.getElementById('studentCountInput').value = names.length;
+    renderTeacherTable();
+    alert("Sınıf listesi ve ayarlar başarıyla kaydedildi!");
 }
 
-function updateTeacherUI() {
-    document.getElementById('weekInput').value = appData.week || 1;
-    document.getElementById('studentCountInput').value = appData.students ? appData.students.length : 0;
-    
-    // Textarea'yı sadece odaklanılmamışsa güncelle (yazarken sıfırlanmasın)
-    if (document.activeElement !== document.getElementById('studentNamesInput')) {
-        document.getElementById('studentNamesInput').value = appData.students ? appData.students.join('\n') : '';
-    }
-
+function renderTeacherTable() {
     const tbody = document.getElementById('teacherTableBody');
     tbody.innerHTML = '';
 
-    if (!appData.students || appData.students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10">Henüz öğrenci eklenmedi.</td></tr>';
+    if (!store.students || store.students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10">Liste boş.</td></tr>';
         return;
     }
 
-    const totalStudents = appData.students.length;
-    const startPage = ((appData.week - 1) * totalStudents) + 1;
+    const totalStudents = store.students.length;
+    const startPage = ((store.week - 1) * totalStudents) + 1;
 
-    appData.students.forEach((name, index) => {
-        const studentPage = startPage + index;
-        const studentProgress = (appData.progress && appData.progress[index]) ? appData.progress[index] : Array(7).fill(false);
+    store.students.forEach((name, idx) => {
+        const studentPage = startPage + idx;
+        const studentProgress = store.progress[idx] || Array(7).fill(false);
 
         let row = `<tr>
-            <td>${index + 1}</td>
-            <td><strong>${name}</strong></td>
-            <td><span class="badge">Sayfa ${studentPage}</span></td>`;
+            <td>${idx + 1}</td>
+            <td style="text-align:left; font-weight:600;">${name}</td>
+            <td><span class="badge" style="font-size:11px;">Sayfa ${studentPage}</span></td>`;
 
         for (let d = 0; d < 7; d++) {
-            row += `<td>${studentProgress[d] ? '✔' : '-'}</td>`;
+            row += `<td>${studentProgress[d] ? '<b style="color:#34a853;">✔</b>' : '<span style="color:#ccc;">-</span>'}</td>`;
         }
 
         row += `</tr>`;
@@ -229,67 +239,78 @@ function updateTeacherUI() {
     });
 }
 
-function populateStudentSelect() {
+// --- ÖĞRENCİ EKRANI FONKSİYONLARI ---
+function initStudentView() {
     const select = document.getElementById('studentSelect');
-    const selectedValue = select.value;
-    select.innerHTML = '<option value="">-- Listeden Adınızı Seçin --</option>';
+    select.innerHTML = '<option value="">-- Listeden İsminizi Seçin --</option>';
 
-    if (appData.students) {
-        appData.students.forEach((name, index) => {
-            select.innerHTML += `<option value="${index}">${index + 1}. ${name}</option>`;
+    if (store.students && store.students.length > 0) {
+        store.students.forEach((name, idx) => {
+            select.innerHTML += `<option value="${idx}">${idx + 1}. ${name}</option>`;
         });
-    }
-
-    select.value = selectedValue;
-    if (selectedValue !== "") {
-        loadStudentProgress();
     }
 }
 
-function loadStudentProgress() {
-    const select = document.getElementById('studentSelect');
-    const index = select.value;
-    const detailDiv = document.getElementById('studentDetail');
+function onStudentSelect() {
+    const idx = document.getElementById('studentSelect').value;
+    const content = document.getElementById('studentContent');
 
-    if (index === "") {
-        detailDiv.style.display = "none";
+    if (idx === "") {
+        content.style.display = "none";
         return;
     }
 
-    const name = appData.students[index];
-    const totalStudents = appData.students.length;
-    const assignedPage = ((appData.week - 1) * totalStudents) + parseInt(index) + 1;
+    const totalStudents = store.students.length;
+    const assignedPage = ((store.week - 1) * totalStudents) + parseInt(idx) + 1;
 
-    document.getElementById('studentNameDisplay').innerText = name;
-    document.getElementById('assignedPage').innerText = assignedPage;
-
-    renderDayBoxes(index);
-    detailDiv.style.display = "block";
+    document.getElementById('displayPageNo').innerText = `Sayfa ${assignedPage}`;
+    renderDayGrid(idx);
+    content.style.display = "block";
 }
 
-function renderDayBoxes(studentIndex) {
-    const daysContainer = document.getElementById('daysContainer');
-    daysContainer.innerHTML = '';
+function renderDayGrid(studentIdx) {
+    const dayGrid = document.getElementById('dayGrid');
+    dayGrid.innerHTML = '';
 
     const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    if (!appData.progress) appData.progress = {};
-    if (!appData.progress[studentIndex]) appData.progress[studentIndex] = Array(7).fill(false);
+    if (!store.progress[studentIdx]) {
+        store.progress[studentIdx] = Array(7).fill(false);
+    }
 
-    days.forEach((day, dIndex) => {
-        const isChecked = appData.progress[studentIndex][dIndex];
-        const box = document.createElement('div');
-        box.className = `day-box ${isChecked ? 'active' : ''}`;
-        box.innerText = `${day}\n${isChecked ? '✓ Okundu' : '⚪ Okunmadı'}`;
-        
-        box.onclick = function() {
-            appData.progress[studentIndex][dIndex] = !appData.progress[studentIndex][dIndex];
-            
-            // Firebase'e Anında Kaydet
-            db.collection("okuma_takip").doc("sinif_verisi").set(appData);
+    days.forEach((day, dIdx) => {
+        const isChecked = store.progress[studentIdx][dIdx];
+        const card = document.createElement('div');
+        card.className = `day-card ${isChecked ? 'active' : ''}`;
+        card.innerHTML = `
+            <div>${day}</div>
+            <div class="status-icon">${isChecked ? '✓ Okundu' : '⚪ Okunmadı'}</div>
+        `;
+
+        card.onclick = function() {
+            store.progress[studentIdx][dIdx] = !store.progress[studentIdx][dIdx];
+            saveData();
+            renderDayGrid(studentIdx);
         };
 
-        daysContainer.appendChild(box);
+        dayGrid.appendChild(card);
     });
+}
+
+// --- VERİ SAKLAMA / YÜKLEME (LocalStorage) ---
+function saveData() {
+    localStorage.setItem('okuma_takip_db', JSON.stringify(store));
+}
+
+function loadData() {
+    const saved = localStorage.getItem('okuma_takip_db');
+    if (saved) {
+        try {
+            store = JSON.parse(saved);
+            if (!store.progress) store.progress = {};
+        } catch(e) {
+            console.error("Veri okuma hatası", e);
+        }
+    }
 }
 </script>
 
