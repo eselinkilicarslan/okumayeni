@@ -34,6 +34,8 @@
         .btn:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); }
         .btn-success:hover { background-color: #2b8a43; }
+        .btn-pdf { background-color: #dc3545; margin-top: 10px; }
+        .btn-pdf:hover { background-color: #c82333; }
 
         /* Öğrenci Ekranı Stilleri */
         .page-banner { background: #e8f0fe; border: 1px solid #aecbfa; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; }
@@ -53,6 +55,12 @@
         
         .lock-screen { text-align: center; padding: 30px 10px; }
         .lock-screen input { max-width: 250px; margin: 10px auto; text-align: center; font-size: 18px; letter-spacing: 4px; }
+
+        @media print {
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; max-width: 100%; }
+            .btn, .header, .card:first-child { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -76,7 +84,7 @@
 
         <div id="studentContent" style="display: none;">
             <div class="page-banner">
-                <div style="font-size: 14px; color: #5f6368;">Bu Haftaki Okuma Göreviniz</div>
+                <div style="font-size: 14px; color: #5f6368;" id="weekBannerTitle">1. Hafta Okuma Göreviniz</div>
                 <div class="page-number" id="displayPageNo">Sayfa -</div>
             </div>
 
@@ -121,10 +129,15 @@
                 <button class="btn btn-success" onclick="saveTeacherSettings()">Sınıf Listesini ve Haftayı Kaydet</button>
             </div>
 
-            <div class="card">
-                <h3 style="margin-bottom: 10px; font-size: 16px;">📊 Sınıf Genel Okuma Tablosu</h3>
-                <div class="table-responsive">
-                    <table>
+            <div class="card" id="printableArea">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="font-size: 16px;" id="teacherTableTitle">📊 1. Hafta Genel Okuma Tablosu</h3>
+                </div>
+                
+                <button class="btn btn-pdf" onclick="exportToPDF()">📄 Tabloyu PDF Olarak İndir / Yazdır</button>
+
+                <div class="table-responsive" style="margin-top: 15px;">
+                    <table id="pdfTable">
                         <thead>
                             <tr>
                                 <th>No</th>
@@ -150,7 +163,7 @@ const DEFAULT_PASSWORD = "1234";
 let store = {
     week: 1,
     students: ["Öğrenci 1", "Öğrenci 2", "Öğrenci 3"],
-    progress: {} // { studentIndex: [true, false, ...] }
+    weeklyProgress: {} // Structure: { weekNumber: { studentIndex: [true, false, ...] } }
 };
 
 // URL Parametresi Kontrolü
@@ -206,12 +219,15 @@ function saveTeacherSettings() {
     saveData();
     document.getElementById('studentCountInput').value = names.length;
     renderTeacherTable();
-    alert("Sınıf listesi ve ayarlar başarıyla kaydedildi!");
+    alert(`${week}. Hafta ayarları ve öğrenci listesi başarıyla kaydedildi!`);
 }
 
 function renderTeacherTable() {
     const tbody = document.getElementById('teacherTableBody');
     tbody.innerHTML = '';
+    
+    const currentWeek = store.week || 1;
+    document.getElementById('teacherTableTitle').innerText = `📊 ${currentWeek}. Hafta Genel Okuma Tablosu`;
 
     if (!store.students || store.students.length === 0) {
         tbody.innerHTML = '<tr><td colspan="10">Liste boş.</td></tr>';
@@ -219,11 +235,12 @@ function renderTeacherTable() {
     }
 
     const totalStudents = store.students.length;
-    const startPage = ((store.week - 1) * totalStudents) + 1;
+    const startPage = ((currentWeek - 1) * totalStudents) + 1;
+    const currentWeekData = (store.weeklyProgress && store.weeklyProgress[currentWeek]) ? store.weeklyProgress[currentWeek] : {};
 
     store.students.forEach((name, idx) => {
         const studentPage = startPage + idx;
-        const studentProgress = store.progress[idx] || Array(7).fill(false);
+        const studentProgress = currentWeekData[idx] || Array(7).fill(false);
 
         let row = `<tr>
             <td>${idx + 1}</td>
@@ -237,6 +254,38 @@ function renderTeacherTable() {
         row += `</tr>`;
         tbody.innerHTML += row;
     });
+}
+
+function exportToPDF() {
+    const currentWeek = store.week || 1;
+    const printWindow = window.open('', '', 'height=600,width=800');
+    const tableHTML = document.getElementById('pdfTable').outerHTML;
+    
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>${currentWeek}. Hafta Kitap Okuma Takip Listesi</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                    th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+                    th { background-color: #f2f2f2; }
+                </style>
+            </head>
+            <body>
+                <h2>📚 ${currentWeek}. Hafta Sınıf Kitap Okuma Takip Listesi</h2>
+                ${tableHTML}
+            </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
 }
 
 // --- ÖĞRENCİ EKRANI FONKSİYONLARI ---
@@ -260,9 +309,11 @@ function onStudentSelect() {
         return;
     }
 
+    const currentWeek = store.week || 1;
     const totalStudents = store.students.length;
-    const assignedPage = ((store.week - 1) * totalStudents) + parseInt(idx) + 1;
+    const assignedPage = ((currentWeek - 1) * totalStudents) + parseInt(idx) + 1;
 
+    document.getElementById('weekBannerTitle').innerText = `${currentWeek}. Hafta Okuma Göreviniz`;
     document.getElementById('displayPageNo').innerText = `Sayfa ${assignedPage}`;
     renderDayGrid(idx);
     content.style.display = "block";
@@ -272,13 +323,15 @@ function renderDayGrid(studentIdx) {
     const dayGrid = document.getElementById('dayGrid');
     dayGrid.innerHTML = '';
 
+    const currentWeek = store.week || 1;
     const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    if (!store.progress[studentIdx]) {
-        store.progress[studentIdx] = Array(7).fill(false);
-    }
+    
+    if (!store.weeklyProgress) store.weeklyProgress = {};
+    if (!store.weeklyProgress[currentWeek]) store.weeklyProgress[currentWeek] = {};
+    if (!store.weeklyProgress[currentWeek][studentIdx]) store.weeklyProgress[currentWeek][studentIdx] = Array(7).fill(false);
 
     days.forEach((day, dIdx) => {
-        const isChecked = store.progress[studentIdx][dIdx];
+        const isChecked = store.weeklyProgress[currentWeek][studentIdx][dIdx];
         const card = document.createElement('div');
         card.className = `day-card ${isChecked ? 'active' : ''}`;
         card.innerHTML = `
@@ -287,7 +340,7 @@ function renderDayGrid(studentIdx) {
         `;
 
         card.onclick = function() {
-            store.progress[studentIdx][dIdx] = !store.progress[studentIdx][dIdx];
+            store.weeklyProgress[currentWeek][studentIdx][dIdx] = !store.weeklyProgress[currentWeek][studentIdx][dIdx];
             saveData();
             renderDayGrid(studentIdx);
         };
@@ -306,7 +359,7 @@ function loadData() {
     if (saved) {
         try {
             store = JSON.parse(saved);
-            if (!store.progress) store.progress = {};
+            if (!store.weeklyProgress) store.weeklyProgress = {};
         } catch(e) {
             console.error("Veri okuma hatası", e);
         }
