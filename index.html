@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sınıf Kitap Okuma Takip Sistemi (Canlı Takip)</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; padding: 0; }
+            .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+<header class="bg-white border-b border-slate-200 sticky top-0 z-30 no-print shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-md">
+                <i class="fa-solid fa-book-open text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-slate-900 leading-tight">Okuma Takip Sistemi</h1>
+                <p class="text-xs text-slate-500 hidden sm:block">Canlı Etkileşimli Öğrenci Okuma Çizelgesi</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <!-- Mode Switcher Tabs -->
+            <button id="tabStudentBtn" onclick="switchView('student')" class="px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-50 text-brand-700">
+                <i class="fa-solid fa-user-graduate"></i>
+                <span>Öğrenci Ekranı</span>
+            </button>
+            <button id="tabTeacherBtn" onclick="switchView('teacher')" class="px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 text-slate-600 hover:bg-slate-100">
+                <i class="fa-solid fa-chalkboard-user"></i>
+                <span>Sınıf / Öğretmen Ekranı</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Status Banner for Live Sync -->
+    <div id="syncStatus" class="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs sm:text-sm flex items-center justify-between no-print shadow-sm">
+        <div class="flex items-center space-x-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span id="syncText">Bulut Veritabanı Aktif - Tüm İşaretlemeler Anlık Senkronize Ediliyor</span>
+        </div>
+        <button onclick="copyShareLink()" class="text-xs font-semibold bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
+            <i class="fa-regular fa-copy"></i>
+            <span>Öğrenci Linkini Kopyala</span>
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: STUDENT VIEW (Öğrenci Ekranı) -->
+    <!-- ========================================== -->
+    <section id="studentView" class="space-y-6">
+        <!-- Student Selection Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-circle-user text-brand-600"></i>
+                <span>Öğrenci Girişi</span>
+            </h2>
+            <p class="text-sm text-slate-500 mb-4">Lütfen listeden kendi adınızı seçin. İşaretlemeleriniz anında sınıf panosuna yansıyacaktır.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Sınıf Listesinden Adınızı Seçin:</label>
+                    <select id="studentSelect" onchange="onStudentSelectChanged()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500 transition">
+                        <option value="">-- İsim Seçiniz --</option>
+                    </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="refreshData()" class="w-full md:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-medium text-sm transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Listeyi Yenile</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Active Reading Card -->
+        <div id="studentCard" class="hidden bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
+            <div class="bg-gradient-to-r from-brand-600 to-blue-700 p-6 text-white">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide uppercase mb-2">
+                            Kişisel Okuma Panosu
+                        </span>
+                        <h3 id="studentCardName" class="text-2xl font-black">Öğrenci Adı</h3>
+                        <p id="studentCardWeekInfo" class="text-brand-100 text-sm mt-1">1. Hafta Okuma Görevi</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-xl text-center sm:text-right">
+                        <div class="text-xs text-brand-100 uppercase tracking-wider font-semibold">Bu Hafta Okunacak</div>
+                        <div id="studentCardPage" class="text-3xl font-extrabold text-white mt-0.5">Sayfa --</div>
+                        <div class="text-xs text-brand-200 mt-1">7 Gün boyunca bu sayfayı okuyacaksınız.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7 Days Interactive Checkboxes -->
+            <div class="p-6">
+                <h4 class="text-sm font-bold text-slate-800 mb-4 flex items-center justify-between">
+                    <span><i class="fa-regular fa-calendar-check text-brand-600 mr-2"></i>Günlük Okuma Takibi</span>
+                    <span id="studentProgressBadge" class="text-xs px-2.5 py-1 bg-slate-100 text-slate-700 rounded-full font-semibold">0 / 7 Gün Tamamlandı</span>
+                </h4>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <!-- Day Card 1 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pazartesi</span>
+                        <input type="checkbox" data-day="pzt" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 2 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Salı</span>
+                        <input type="checkbox" data-day="sal" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 3 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Çarşamba</span>
+                        <input type="checkbox" data-day="car" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 4 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Perşembe</span>
+                        <input type="checkbox" data-day="per" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 5 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cuma</span>
+                        <input type="checkbox" data-day="cum" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 6 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Cumartesi</span>
+                        <input type="checkbox" data-day="cmt" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+
+                    <!-- Day Card 7 -->
+                    <label class="group relative bg-slate-50 border-2 border-slate-200 hover:border-brand-500 rounded-xl p-4 cursor-pointer transition flex flex-col items-center justify-between space-y-3 text-center">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pazar</span>
+                        <input type="checkbox" data-day="paz" onchange="toggleStudentDay(this)" class="w-6 h-6 text-brand-600 border-slate-300 rounded-lg focus:ring-brand-500 cursor-pointer">
+                        <span class="text-[10px] text-slate-400 group-hover:text-slate-600">Tamamlandı</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: TEACHER / CLASS OVERVIEW (Sınıf Panosu) -->
+    <!-- ========================================== -->
+    <section id="teacherView" class="hidden space-y-6">
+        <!-- Control Panel -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm no-print">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Sınıf Yönetim ve Genel Takip Panosu</h2>
+                    <p class="text-sm text-slate-500">Sınıf mevcudunu, haftayı ve öğrenci isimlerini canlı yönetin.</p>
+                </div>
+
+                <!-- Export & Share Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="copyShareLink()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-share-nodes text-brand-600"></i>
+                        <span>Öğrenci Linki Kopyala</span>
+                    </button>
+                    <button onclick="exportToExcel()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-regular fa-file-excel"></i>
+                        <span>Excel İndir</span>
+                    </button>
+                    <button onclick="window.print()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-sm">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Yazdır / PDF</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Parameters Setup Form -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Sınıf Öğrenci Sayısı:</label>
+                    <input type="number" id="cfgStudentCount" value="26" min="1" max="100" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Aktif Hafta:</label>
+                    <input type="number" id="cfgWeek" value="1" min="1" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Sınıf Adı / Kodu:</label>
+                    <input type="text" id="cfgClassName" value="Sınıf 1" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="updateClassConfig()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 px-4 rounded-lg text-sm transition shadow-sm">
+                        Ayarları Kaydet ve Yenile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Overview Info Header -->
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h3 id="classTitleDisplay" class="text-lg font-bold">Sınıf 1 - 1. Hafta Okuma Listesi</h3>
+                <p id="classRangeDisplay" class="text-xs text-slate-300 mt-0.5">Bu hafta okunacak sayfa aralığı: Sayfa 1 - 26</p>
+            </div>
+            <div id="overallClassProgress" class="text-right bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm border border-white/10">
+                <div class="text-[10px] uppercase tracking-wider text-slate-300">Sınıf Genel Tamamlanma</div>
+                <div id="overallPercentage" class="text-xl font-black text-emerald-400">%0</div>
+            </div>
+        </div>
+
+        <!-- Class Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="teacherTable" class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider font-bold border-b border-slate-200">
+                            <th class="py-3 px-4 w-12 text-center">No</th>
+                            <th class="py-3 px-4 min-w-[200px]">Öğrenci Adı Soyadı</th>
+                            <th class="py-3 px-4 text-center min-w-[120px]">Atanan Sayfa</th>
+                            <th class="py-3 px-2 text-center w-12">Pzt</th>
+                            <th class="py-3 px-2 text-center w-12">Sal</th>
+                            <th class="py-3 px-2 text-center w-12">Çar</th>
+                            <th class="py-3 px-2 text-center w-12">Per</th>
+                            <th class="py-3 px-2 text-center w-12">Cum</th>
+                            <th class="py-3 px-2 text-center w-12">Cmt</th>
+                            <th class="py-3 px-2 text-center w-12">Paz</th>
+                            <th class="py-3 px-4 text-center w-24">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacherTableBody" class="divide-y divide-slate-200 font-medium">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global variables & state setup
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'okuma-takip-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+    let app, auth, db;
+    let currentUser = null;
+    let classData = {
+        className: "Sınıf 1",
+        studentCount: 26,
+        currentWeek: 1,
+        students: {} // { 1: { name: "Ali", days: { pzt: true, sal: false, ... } } }
+    };
+
+    // UI state
+    let selectedStudentIndex = null;
+
+    async function initFirebase() {
+        if (!firebaseConfig) {
+            console.warn("Firebase config yok, yerel hafıza modunda çalışılıyor.");
+            setupLocalFallback();
+            return;
+        }
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            // Auth flow
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            currentUser = auth.currentUser;
+
+            // Subscribe to Firestore Document for Realtime sync
+            subscribeToClassDoc();
+        } catch (err) {
+            console.error("Firebase başlatma hatası:", err);
+            setupLocalFallback();
+        }
+    }
+
+    function getClassDocRef() {
+        return doc(db, 'artifacts', appId, 'public', 'data', 'readingTracker', 'mainClass');
+    }
+
+    function subscribeToClassDoc() {
+        const docRef = getClassDocRef();
+        onSnapshot(docRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data) {
+                    classData = data;
+                    renderAll();
+                }
+            } else {
+                // Initial creation
+                saveClassDataToFirebase();
+            }
+        }, (err) => {
+            console.error("Firestore sync hatası:", err);
+        });
+    }
+
+    async function saveClassDataToFirebase() {
+        if (!db) return;
+        try {
+            const docRef = getClassDocRef();
+            await setDoc(docRef, classData, { merge: true });
+        } catch (err) {
+            console.error("Veri kaydetme hatası:", err);
+        }
+    }
+
+    function setupLocalFallback() {
+        document.getElementById('syncText').innerText = "Çevrimdışı / Yerel Mod (Değişiklikler bu cihazda kalır)";
+        renderAll();
+    }
+
+    function ensureStudentStructure() {
+        if (!classData.students) classData.students = {};
+        for (let i = 1; i <= classData.studentCount; i++) {
+            if (!classData.students[i]) {
+                classData.students[i] = {
+                    name: `${i}. Öğrenci`,
+                    days: { pzt: false, sal: false, car: false, per: false, cum: false, cmt: false, paz: false }
+                };
+            } else {
+                if (!classData.students[i].name) classData.students[i].name = `${i}. Öğrenci`;
+                if (!classData.students[i].days) {
+                    classData.students[i].days = { pzt: false, sal: false, car: false, per: false, cum: false, cmt: false, paz: false };
+                }
+            }
+        }
+    }
+
+    function calculatePageForStudent(index, week, totalStudents) {
+        const startPage = (week - 1) * totalStudents + 1;
+        return startPage + (index - 1);
+    }
+
+    function renderAll() {
+        ensureStudentStructure();
+
+        // Update inputs in teacher panel
+        document.getElementById('cfgStudentCount').value = classData.studentCount;
+        document.getElementById('cfgWeek').value = classData.currentWeek;
+        document.getElementById('cfgClassName').value = classData.className || "Sınıf 1";
+
+        // Render Student Dropdown
+        renderStudentDropdown();
+
+        // Render Teacher Table
+        renderTeacherTable();
+
+        // Render Selected Student view if any
+        if (selectedStudentIndex && classData.students[selectedStudentIndex]) {
+            renderStudentDashboard(selectedStudentIndex);
+        }
+    }
+
+    function renderStudentDropdown() {
+        const select = document.getElementById('studentSelect');
+        const currentVal = select.value;
+        select.innerHTML = `<option value="">-- İsim Seçiniz --</option>`;
+
+        for (let i = 1; i <= classData.studentCount; i++) {
+            const st = classData.students[i];
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `${i}. ${st ? st.name : 'Öğrenci ' + i}`;
+            select.appendChild(opt);
+        }
+
+        if (currentVal && currentVal <= classData.studentCount) {
+            select.value = currentVal;
+        }
+    }
+
+    function renderStudentDashboard(index) {
+        const student = classData.students[index];
+        if (!student) return;
+
+        document.getElementById('studentCard').classList.remove('hidden');
+        document.getElementById('studentCardName').innerText = student.name;
+
+        const assignedPage = calculatePageForStudent(index, classData.currentWeek, classData.studentCount);
+        document.getElementById('studentCardPage').innerText = `Sayfa ${assignedPage}`;
+        document.getElementById('studentCardWeekInfo').innerText = `${classData.className} - ${classData.currentWeek}. Hafta Okuma Görevi`;
+
+        // Fill Checkboxes
+        const days = student.days || {};
+        let checkedCount = 0;
+
+        const checkboxes = document.querySelectorAll('#studentCard input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            const dayKey = cb.getAttribute('data-day');
+            const isChecked = !!days[dayKey];
+            cb.checked = isChecked;
+            if (isChecked) checkedCount++;
+
+            // Highlight box label parent
+            const label = cb.closest('label');
+            if (isChecked) {
+                label.classList.add('border-brand-500', 'bg-brand-50');
+            } else {
+                label.classList.remove('border-brand-500', 'bg-brand-50');
+            }
+        });
+
+        document.getElementById('studentProgressBadge').innerText = `${checkedCount} / 7 Gün Tamamlandı`;
+    }
+
+    function renderTeacherTable() {
+        const tbody = document.getElementById('teacherTableBody');
+        tbody.innerHTML = '';
+
+        const week = classData.currentWeek;
+        const totalStudents = classData.studentCount;
+        const startPage = (week - 1) * totalStudents + 1;
+        const endPage = week * totalStudents;
+
+        document.getElementById('classTitleDisplay').innerText = `${classData.className} - ${week}. Hafta Okuma Listesi`;
+        document.getElementById('classRangeDisplay').innerText = `Bu hafta okunacak toplam sayfa aralığı: Sayfa ${startPage} - ${endPage}`;
+
+        let totalDaysChecked = 0;
+        let totalDaysPossible = totalStudents * 7;
+
+        for (let i = 1; i <= totalStudents; i++) {
+            const student = classData.students[i] || { name: `${i}. Öğrenci`, days: {} };
+            const page = startPage + (i - 1);
+            const days = student.days || {};
+
+            let studentCheckedCount = 0;
+            ['pzt','sal','car','per','cum','cmt','paz'].forEach(d => {
+                if (days[d]) {
+                    studentCheckedCount++;
+                    totalDaysChecked++;
+                }
+            });
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-50 transition border-b border-slate-200";
+
+            tr.innerHTML = `
+                <td class="py-3 px-4 text-center font-bold text-slate-500">${i}</td>
+                <td class="py-3 px-4">
+                    <input type="text" value="${escapeHtml(student.name)}" 
+                           onchange="window.updateStudentName(${i}, this.value)" 
+                           class="w-full bg-transparent hover:bg-white focus:bg-white border border-transparent hover:border-slate-300 focus:border-brand-500 rounded px-2 py-1 text-slate-800 font-semibold focus:outline-none transition">
+                </td>
+                <td class="py-3 px-4 text-center">
+                    <span class="inline-block bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md font-bold text-xs border border-slate-200">Sayfa ${page}</span>
+                </td>
+                ${['pzt','sal','car','per','cum','cmt','paz'].map(dayKey => `
+                    <td class="py-3 px-2 text-center">
+                        <input type="checkbox" ${days[dayKey] ? 'checked' : ''} 
+                               onchange="window.toggleTeacherDay(${i}, '${dayKey}', this.checked)"
+                               class="w-5 h-5 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer">
+                    </td>
+                `).join('')}
+                <td class="py-3 px-4 text-center">
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full ${studentCheckedCount === 7 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                        ${studentCheckedCount}/7 Gün
+                    </span>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        }
+
+        const overallPct = Math.round((totalDaysChecked / (totalDaysPossible || 1)) * 100);
+        document.getElementById('overallPercentage').innerText = `%${overallPct}`;
+    }
+
+    function escapeHtml(str) {
+        return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    window.onStudentSelectChanged = function() {
+        const val = document.getElementById('studentSelect').value;
+        if (val) {
+            selectedStudentIndex = parseInt(val);
+            renderStudentDashboard(selectedStudentIndex);
+            
+            // Save selection to URL hash so link can be shared
+            window.location.hash = `student=${selectedStudentIndex}`;
+        } else {
+            selectedStudentIndex = null;
+            document.getElementById('studentCard').classList.add('hidden');
+        }
+    };
+
+    window.toggleStudentDay = function(checkboxEl) {
+        if (!selectedStudentIndex) return;
+        const dayKey = checkboxEl.getAttribute('data-day');
+        const isChecked = checkboxEl.checked;
+
+        if (!classData.students[selectedStudentIndex]) return;
+        if (!classData.students[selectedStudentIndex].days) classData.students[selectedStudentIndex].days = {};
+
+        classData.students[selectedStudentIndex].days[dayKey] = isChecked;
+
+        renderStudentDashboard(selectedStudentIndex);
+        renderTeacherTable();
+        saveClassDataToFirebase();
+    };
+
+    window.toggleTeacherDay = function(studentIndex, dayKey, isChecked) {
+        if (!classData.students[studentIndex]) return;
+        if (!classData.students[studentIndex].days) classData.students[studentIndex].days = {};
+
+        classData.students[studentIndex].days[dayKey] = isChecked;
+
+        if (selectedStudentIndex === studentIndex) {
+            renderStudentDashboard(selectedStudentIndex);
+        }
+        renderTeacherTable();
+        saveClassDataToFirebase();
+    };
+
+    window.updateStudentName = function(studentIndex, newName) {
+        if (!classData.students[studentIndex]) return;
+        classData.students[studentIndex].name = newName.trim() || `${studentIndex}. Öğrenci`;
+
+        renderStudentDropdown();
+        if (selectedStudentIndex === studentIndex) {
+            renderStudentDashboard(selectedStudentIndex);
+        }
+        saveClassDataToFirebase();
+    };
+
+    window.updateClassConfig = function() {
+        const count = parseInt(document.getElementById('cfgStudentCount').value) || 26;
+        const week = parseInt(document.getElementById('cfgWeek').value) || 1;
+        const cName = document.getElementById('cfgClassName').value.trim() || "Sınıf 1";
+
+        classData.studentCount = count;
+        classData.currentWeek = week;
+        classData.className = cName;
+
+        ensureStudentStructure();
+        renderAll();
+        saveClassDataToFirebase();
+    };
+
+    window.switchView = function(viewMode) {
+        const studentView = document.getElementById('studentView');
+        const teacherView = document.getElementById('teacherView');
+        const tabStudentBtn = document.getElementById('tabStudentBtn');
+        const tabTeacherBtn = document.getElementById('tabTeacherBtn');
+
+        if (viewMode === 'student') {
+            studentView.classList.remove('hidden');
+            teacherView.classList.add('hidden');
+
+            tabStudentBtn.className = "px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-50 text-brand-700";
+            tabTeacherBtn.className = "px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 text-slate-600 hover:bg-slate-100";
+        } else {
+            studentView.classList.add('hidden');
+            teacherView.classList.remove('hidden');
+
+            tabTeacherBtn.className = "px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-brand-50 text-brand-700";
+            tabStudentBtn.className = "px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 text-slate-600 hover:bg-slate-100";
+        }
+    };
+
+    window.refreshData = function() {
+        renderAll();
+    };
+
+    window.copyShareLink = function() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("Sınıf ve öğrenci takip linki panoya kopyalandı! Bu linki öğrencilerinizle paylaşabilirsiniz.");
+        }).catch(() => {
+            // Fallback for iframe restrictions
+            const input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            alert("Sınıf ve öğrenci takip linki kopyalandı!");
+        });
+    };
+
+    window.exportToExcel = function() {
+        const week = classData.currentWeek;
+        const totalStudents = classData.studentCount;
+        const startPage = (week - 1) * totalStudents + 1;
+
+        const rows = [
+            [`${classData.className} - ${week}. Hafta Okuma Listesi`],
+            [`Okunacak Sayfa Aralığı: Sayfa ${startPage} - ${startPage + totalStudents - 1}`],
+            [],
+            ["Sıra", "Öğrenci Adı Soyadı", "Atanan Sayfa", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz", "Tamamlanma"]
+        ];
+
+        for (let i = 1; i <= totalStudents; i++) {
+            const st = classData.students[i] || { name: `${i}. Öğrenci`, days: {} };
+            const page = startPage + (i - 1);
+            const d = st.days || {};
+
+            let checkedCnt = 0;
+            ['pzt','sal','car','per','cum','cmt','paz'].forEach(k => { if(d[k]) checkedCnt++; });
+
+            rows.push([
+                i,
+                st.name,
+                `Sayfa ${page}`,
+                d.pzt ? "X" : "",
+                d.sal ? "X" : "",
+                d.car ? "X" : "",
+                d.per ? "X" : "",
+                d.cum ? "X" : "",
+                d.cmt ? "X" : "",
+                d.paz ? "X" : "",
+                `${checkedCnt}/7`
+            ]);
+        }
+
+        const worksheet = XLSX.utils.aoa_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Hafta ${week}`);
+
+        worksheet['!cols'] = [
+            { wch: 6 }, { wch: 25 }, { wch: 15 },
+            { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 },
+            { wch: 12 }
+        ];
+
+        XLSX.writeFile(workbook, `${classData.className}_Okuma_Takip_Hafta_${week}.xlsx`);
+    };
+
+    // Auto-detect student hash on load
+    function checkHashForStudent() {
+        const hash = window.location.hash;
+        if (hash && hash.includes('student=')) {
+            const stIdx = parseInt(hash.split('student=')[1]);
+            if (stIdx) {
+                selectedStudentIndex = stIdx;
+                setTimeout(() => {
+                    const sel = document.getElementById('studentSelect');
+                    if (sel) {
+                        sel.value = stIdx;
+                        renderStudentDashboard(stIdx);
+                    }
+                }, 500);
+            }
+        }
+    }
+
+    // Initialize on window load
+    window.onload = function() {
+        initFirebase();
+        checkHashForStudent();
+    };
+</script>
+
+</body>
+</html>
