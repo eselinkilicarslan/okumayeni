@@ -21,46 +21,31 @@
         .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px; }
-        .header h2 { font-size: 20px; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .header h2 { font-size: 20px; color: var(--primary); }
         .badge { background: #e8f0fe; color: var(--primary); padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 13px; }
         
         .card { background: #f8f9fa; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; font-weight: 600; margin-bottom: 6px; color: #3c4043; font-size: 14px; }
         input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; outline: none; }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
         
         .btn { background-color: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; font-size: 14px; }
-        .btn:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); }
-        .btn-success:hover { background-color: #2b8a43; }
         .btn-pdf { background-color: #dc3545; margin-top: 10px; }
-        .btn-pdf:hover { background-color: #c82333; }
 
-        /* Öğrenci Ekranı Stilleri */
         .page-banner { background: #e8f0fe; border: 1px solid #aecbfa; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; }
         .page-number { font-size: 28px; font-weight: bold; color: #d93025; margin-top: 5px; }
         
         .day-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-top: 10px; }
         .day-card { background: white; border: 2px solid var(--border); border-radius: 8px; padding: 12px 8px; text-align: center; cursor: pointer; user-select: none; transition: 0.2s; }
         .day-card.active { background-color: var(--success-bg); border-color: var(--success); color: #137333; font-weight: bold; }
-        .day-card .status-icon { font-size: 18px; margin-top: 4px; }
 
-        /* Öğretmen Tablosu */
         .table-responsive { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; background: white; font-size: 13px; }
         th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: center; }
         th { background-color: #f1f3f4; color: #3c4043; font-weight: 600; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
         
-        .lock-screen { text-align: center; padding: 30px 10px; }
-        .lock-screen input { max-width: 250px; margin: 10px auto; text-align: center; font-size: 18px; letter-spacing: 4px; }
-
-        @media print {
-            body { padding: 0; background: white; }
-            .container { box-shadow: none; max-width: 100%; }
-            .btn, .header, .card:first-child { display: none; }
-        }
+        .sync-status { font-size: 12px; color: #5f6368; text-align: right; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -70,8 +55,10 @@
         <h2>📚 Okuma Takip Sistemi</h2>
         <span id="roleBadge" class="badge">Yükleniyor...</span>
     </div>
+    
+    <div id="syncStatus" class="sync-status">🔄 Veriler senkronize ediliyor...</div>
 
-    <!-- 1. ÖĞRENCİ ARAYÜZÜ (Varsayılan Link) -->
+    <!-- 1. ÖĞRENCİ ARAYÜZÜ -->
     <div id="studentView" style="display: none;">
         <div class="card">
             <div class="form-group">
@@ -95,27 +82,21 @@
         </div>
     </div>
 
-    <!-- 2. ÖĞRETMEN ARAYÜZÜ (?mod=ogretmen Linki) -->
+    <!-- 2. ÖĞRETMEN ARAYÜZÜ (?mod=ogretmen) -->
     <div id="teacherView" style="display: none;">
-        
-        <!-- Şifre Ekranı -->
-        <div id="teacherLock" class="card lock-screen">
+        <div id="teacherLock" class="card" style="text-align: center;">
             <h3>🔒 Öğretmen Paneli Girişi</h3>
-            <p style="font-size: 13px; color: #5f6368; margin-top: 5px;">Devam etmek için öğretmen şifresini girin.</p>
-            <div class="form-group" style="margin-top: 15px;">
-                <input type="password" id="passInput" placeholder="Şifre (Varsayılan: 1234)">
-            </div>
-            <button class="btn" onclick="checkPassword()" style="max-width: 250px; margin: 0 auto;">Giriş Yap</button>
+            <input type="password" id="passInput" placeholder="Şifre (1234)" style="max-width:200px; margin: 10px auto; display:block;">
+            <button class="btn" onclick="checkPassword()" style="max-width: 200px;">Giriş Yap</button>
         </div>
 
-        <!-- Yönetim Paneli (Şifre Sonrası) -->
         <div id="teacherPanel" style="display: none;">
             <div class="card">
-                <h3 style="margin-bottom: 12px; font-size: 16px;">⚙️ Sınıf & Hafta Ayarları</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <h3>⚙️ Sınıf & Hafta Ayarları</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
                     <div class="form-group">
                         <label>Aktif Hafta:</label>
-                        <input type="number" id="weekInput" value="1" min="1" onchange="saveTeacherSettings()">
+                        <input type="number" id="weekInput" value="1" min="1" onchange="changeWeek()">
                     </div>
                     <div class="form-group">
                         <label>Öğrenci Sayısı:</label>
@@ -123,20 +104,19 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Öğrenci Listesi (Her satıra bir öğrenci ismi yazın):</label>
-                    <textarea id="studentListInput" rows="6" placeholder="Ahmet Yılmaz&#10;Ayşe Kaya&#10;Mehmet Demir"></textarea>
+                    <label>Öğrenci Listesi (Her satıra bir isim):</label>
+                    <textarea id="studentListInput" rows="5"></textarea>
                 </div>
                 <button class="btn btn-success" onclick="saveTeacherSettings()">Sınıf Listesini ve Haftayı Kaydet</button>
             </div>
 
-            <div class="card" id="printableArea">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="font-size: 16px;" id="teacherTableTitle">📊 1. Hafta Genel Okuma Tablosu</h3>
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 id="teacherTableTitle">📊 Genel Okuma Tablosu</h3>
+                    <button class="btn btn-pdf" style="width: auto; padding: 6px 12px;" onclick="exportToPDF()">📄 PDF İndir</button>
                 </div>
                 
-                <button class="btn btn-pdf" onclick="exportToPDF()">📄 Tabloyu PDF Olarak İndir / Yazdır</button>
-
-                <div class="table-responsive" style="margin-top: 15px;">
+                <div class="table-responsive">
                     <table id="pdfTable">
                         <thead>
                             <tr>
@@ -146,9 +126,7 @@
                                 <th>Pzt</th><th>Sal</th><th>Çar</th><th>Per</th><th>Cum</th><th>Cmt</th><th>Paz</th>
                             </tr>
                         </thead>
-                        <tbody id="teacherTableBody">
-                            <tr><td colspan="10">Kayıtlı öğrenci bulunamadı.</td></tr>
-                        </tbody>
+                        <tbody id="teacherTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -157,49 +135,88 @@
 </div>
 
 <script>
-// --- UYGULAMA VERİ YAPISI ---
-const DEFAULT_PASSWORD = "1234";
+const DEFAULT_PASS = "1234";
+
+// Npoint.io - Ücretsiz ve Kurulumsuz Ortak Veritabanı Servisi
+const API_URL = "https://api.npoint.io/8863f8202d038e2197be"; 
 
 let store = {
     week: 1,
-    students: ["Öğrenci 1", "Öğrenci 2", "Öğrenci 3"],
-    weeklyProgress: {} // Structure: { weekNumber: { studentIndex: [true, false, ...] } }
+    students: ["Öğrenci 1", "Öğrenci 2"],
+    weeklyProgress: {} // Yapı: { "1": { "0": [true, false...], "1": [...] }, "2": { ... } }
 };
 
-// URL Parametresi Kontrolü
 const urlParams = new URLSearchParams(window.location.search);
 const isTeacherMode = urlParams.get('mod') === 'ogretmen';
 
-// Sayfa Yüklendiğinde
 window.onload = function() {
-    loadData();
-
     if (isTeacherMode) {
         document.getElementById('roleBadge').innerText = "Öğretmen Modu";
         document.getElementById('teacherView').style.display = "block";
     } else {
         document.getElementById('roleBadge').innerText = "Öğrenci Ekranı";
         document.getElementById('studentView').style.display = "block";
-        initStudentView();
     }
+    
+    // Her 3 saniyede bir verileri sunucudan çek (Canlı Senkronizasyon)
+    fetchData();
+    setInterval(fetchData, 3000);
 };
 
-// --- ÖĞRETMEN PANELİ FONKSİYONLARI ---
 function checkPassword() {
-    const pass = document.getElementById('passInput').value;
-    if (pass === DEFAULT_PASSWORD) {
+    if (document.getElementById('passInput').value === DEFAULT_PASS) {
         document.getElementById('teacherLock').style.display = "none";
         document.getElementById('teacherPanel').style.display = "block";
         initTeacherPanel();
     } else {
-        alert("Hatalı şifre! (Varsayılan Şifre: 1234)");
+        alert("Hatalı şifre!");
     }
 }
 
-function initTeacherPanel() {
-    document.getElementById('weekInput').value = store.week || 1;
-    document.getElementById('studentListInput').value = store.students ? store.students.join('\n') : '';
-    document.getElementById('studentCountInput').value = store.students ? store.students.length : 0;
+function fetchData() {
+    fetch(API_URL)
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.students) {
+                store = data;
+                if (!store.weeklyProgress) store.weeklyProgress = {};
+                
+                document.getElementById('syncStatus').innerText = "🟢 Canlı Bağlantı Aktif (Otomatik Senkronize Ediliyor)";
+                
+                if (isTeacherMode && document.getElementById('teacherPanel').style.display !== "none") {
+                    renderTeacherTable();
+                } else if (!isTeacherMode) {
+                    initStudentView();
+                }
+            }
+        })
+        .catch(err => {
+            document.getElementById('syncStatus').innerText = "🔴 Sunucu bağlantı hatası!";
+        });
+}
+
+function syncDataToCloud() {
+    document.getElementById('syncStatus').innerText = "⏳ Kaydediliyor...";
+    fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(store)
+    })
+    .then(() => {
+        document.getElementById('syncStatus').innerText = "🟢 Canlı Bağlantı Aktif (Kaydedildi)";
+    });
+}
+
+function changeWeek() {
+    const newWeek = parseInt(document.getElementById('weekInput').value) || 1;
+    store.week = newWeek;
+    
+    // Yeni haftaya geçildiğinde o haftanın verisi yoksa boş bir obje oluştur
+    if (!store.weeklyProgress[newWeek]) {
+        store.weeklyProgress[newWeek] = {};
+    }
+    
+    syncDataToCloud();
     renderTeacherTable();
 }
 
@@ -208,44 +225,38 @@ function saveTeacherSettings() {
     const names = rawNames.split('\n').map(s => s.trim()).filter(s => s.length > 0);
     const week = parseInt(document.getElementById('weekInput').value) || 1;
 
-    if (names.length === 0) {
-        alert("Lütfen en az bir öğrenci ismi giriniz.");
-        return;
-    }
+    if (names.length === 0) return alert("Öğrenci ismi giriniz.");
 
     store.students = names;
     store.week = week;
     
-    saveData();
+    if (!store.weeklyProgress[week]) store.weeklyProgress[week] = {};
+
     document.getElementById('studentCountInput').value = names.length;
+    syncDataToCloud();
     renderTeacherTable();
-    alert(`${week}. Hafta ayarları ve öğrenci listesi başarıyla kaydedildi!`);
+    alert("Sınıf ve hafta başarıyla kaydedildi!");
 }
 
 function renderTeacherTable() {
     const tbody = document.getElementById('teacherTableBody');
     tbody.innerHTML = '';
     
-    const currentWeek = store.week || 1;
-    document.getElementById('teacherTableTitle').innerText = `📊 ${currentWeek}. Hafta Genel Okuma Tablosu`;
-
-    if (!store.students || store.students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10">Liste boş.</td></tr>';
-        return;
-    }
+    const week = store.week || 1;
+    document.getElementById('teacherTableTitle').innerText = `📊 ${week}. Hafta Genel Okuma Tablosu`;
 
     const totalStudents = store.students.length;
-    const startPage = ((currentWeek - 1) * totalStudents) + 1;
-    const currentWeekData = (store.weeklyProgress && store.weeklyProgress[currentWeek]) ? store.weeklyProgress[currentWeek] : {};
+    const startPage = ((week - 1) * totalStudents) + 1;
+    const currentWeekProgress = store.weeklyProgress[week] || {};
 
     store.students.forEach((name, idx) => {
         const studentPage = startPage + idx;
-        const studentProgress = currentWeekData[idx] || Array(7).fill(false);
+        const studentProgress = currentWeekProgress[idx] || Array(7).fill(false);
 
         let row = `<tr>
             <td>${idx + 1}</td>
-            <td style="text-align:left; font-weight:600;">${name}</td>
-            <td><span class="badge" style="font-size:11px;">Sayfa ${studentPage}</span></td>`;
+            <td style="text-align:left;"><b>${name}</b></td>
+            <td><span class="badge">Sayfa ${studentPage}</span></td>`;
 
         for (let d = 0; d < 7; d++) {
             row += `<td>${studentProgress[d] ? '<b style="color:#34a853;">✔</b>' : '<span style="color:#ccc;">-</span>'}</td>`;
@@ -256,47 +267,20 @@ function renderTeacherTable() {
     });
 }
 
-function exportToPDF() {
-    const currentWeek = store.week || 1;
-    const printWindow = window.open('', '', 'height=600,width=800');
-    const tableHTML = document.getElementById('pdfTable').outerHTML;
-    
-    printWindow.document.write(`
-        <html>
-            <head>
-                <title>${currentWeek}. Hafta Kitap Okuma Takip Listesi</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 20px; }
-                    h2 { text-align: center; color: #1a73e8; margin-bottom: 20px; }
-                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                    th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-                    th { background-color: #f2f2f2; }
-                </style>
-            </head>
-            <body>
-                <h2>📚 ${currentWeek}. Hafta Sınıf Kitap Okuma Takip Listesi</h2>
-                ${tableHTML}
-            </body>
-        </html>
-    `);
-    
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 250);
-}
-
-// --- ÖĞRENCİ EKRANI FONKSİYONLARI ---
 function initStudentView() {
     const select = document.getElementById('studentSelect');
+    const currentSelected = select.value;
+    
     select.innerHTML = '<option value="">-- Listeden İsminizi Seçin --</option>';
-
-    if (store.students && store.students.length > 0) {
+    if (store.students) {
         store.students.forEach((name, idx) => {
             select.innerHTML += `<option value="${idx}">${idx + 1}. ${name}</option>`;
         });
+    }
+    
+    select.value = currentSelected;
+    if (currentSelected !== "") {
+        onStudentSelect();
     }
 }
 
@@ -304,17 +288,15 @@ function onStudentSelect() {
     const idx = document.getElementById('studentSelect').value;
     const content = document.getElementById('studentContent');
 
-    if (idx === "") {
-        content.style.display = "none";
-        return;
-    }
+    if (idx === "") return content.style.display = "none";
 
-    const currentWeek = store.week || 1;
+    const week = store.week || 1;
     const totalStudents = store.students.length;
-    const assignedPage = ((currentWeek - 1) * totalStudents) + parseInt(idx) + 1;
+    const assignedPage = ((week - 1) * totalStudents) + parseInt(idx) + 1;
 
-    document.getElementById('weekBannerTitle').innerText = `${currentWeek}. Hafta Okuma Göreviniz`;
+    document.getElementById('weekBannerTitle').innerText = `${week}. Hafta Okuma Göreviniz`;
     document.getElementById('displayPageNo').innerText = `Sayfa ${assignedPage}`;
+    
     renderDayGrid(idx);
     content.style.display = "block";
 }
@@ -323,47 +305,30 @@ function renderDayGrid(studentIdx) {
     const dayGrid = document.getElementById('dayGrid');
     dayGrid.innerHTML = '';
 
-    const currentWeek = store.week || 1;
+    const week = store.week || 1;
     const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     
-    if (!store.weeklyProgress) store.weeklyProgress = {};
-    if (!store.weeklyProgress[currentWeek]) store.weeklyProgress[currentWeek] = {};
-    if (!store.weeklyProgress[currentWeek][studentIdx]) store.weeklyProgress[currentWeek][studentIdx] = Array(7).fill(false);
+    if (!store.weeklyProgress[week]) store.weeklyProgress[week] = {};
+    if (!store.weeklyProgress[week][studentIdx]) store.weeklyProgress[week][studentIdx] = Array(7).fill(false);
 
     days.forEach((day, dIdx) => {
-        const isChecked = store.weeklyProgress[currentWeek][studentIdx][dIdx];
+        const isChecked = store.weeklyProgress[week][studentIdx][dIdx];
         const card = document.createElement('div');
         card.className = `day-card ${isChecked ? 'active' : ''}`;
-        card.innerHTML = `
-            <div>${day}</div>
-            <div class="status-icon">${isChecked ? '✓ Okundu' : '⚪ Okunmadı'}</div>
-        `;
+        card.innerHTML = `<div>${day}</div><div>${isChecked ? '✓ Okundu' : '⚪ Okunmadı'}</div>`;
 
         card.onclick = function() {
-            store.weeklyProgress[currentWeek][studentIdx][dIdx] = !store.weeklyProgress[currentWeek][studentIdx][dIdx];
-            saveData();
+            store.weeklyProgress[week][studentIdx][dIdx] = !store.weeklyProgress[week][studentIdx][dIdx];
             renderDayGrid(studentIdx);
+            syncDataToCloud();
         };
 
         dayGrid.appendChild(card);
     });
 }
 
-// --- VERİ SAKLAMA / YÜKLEME (LocalStorage) ---
-function saveData() {
-    localStorage.setItem('okuma_takip_db', JSON.stringify(store));
-}
-
-function loadData() {
-    const saved = localStorage.getItem('okuma_takip_db');
-    if (saved) {
-        try {
-            store = JSON.parse(saved);
-            if (!store.weeklyProgress) store.weeklyProgress = {};
-        } catch(e) {
-            console.error("Veri okuma hatası", e);
-        }
-    }
+function exportToPDF() {
+    window.print();
 }
 </script>
 
